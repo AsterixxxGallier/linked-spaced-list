@@ -171,13 +171,13 @@ impl<T: Debug> IndexMut<usize> for LinkedSpacedList<T> {
 
 #[derive(Debug)]
 pub struct LinkedRangeSpacedList<T: Debug> {
-    list: LinkedSpacedList<Bound<T>>
+    list: LinkedSpacedList<Bound<T>>,
 }
 
 #[derive(Debug)]
 enum Bound<T: Debug> {
     Start { end: usize, value: T },
-    End { start: usize }
+    End { start: usize },
 }
 
 impl<T: Debug> LinkedRangeSpacedList<T> {
@@ -190,9 +190,7 @@ impl<T: Debug> LinkedRangeSpacedList<T> {
         let end = self.list.push(length, Bound::End { start });
         if let Bound::Start { end: end_, .. } = &mut self.list[start] {
             *end_ = end;
-        } else {
-            unreachable!();
-        }
+        } else { unreachable!(); }
         (start, end)
     }
 
@@ -205,9 +203,7 @@ impl<T: Debug> LinkedRangeSpacedList<T> {
         let end = self.list.insert_after(end, Bound::End { start });
         if let Bound::Start { end: end_, .. } = &mut self.list[start] {
             *end_ = end;
-        } else {
-            unreachable!();
-        }
+        } else { unreachable!(); }
         (start, end)
     }
 
@@ -220,9 +216,7 @@ impl<T: Debug> LinkedRangeSpacedList<T> {
         let end = self.list.insert_before(end, Bound::End { start });
         if let Bound::Start { end: end_, .. } = &mut self.list[start] {
             *end_ = end;
-        } else {
-            unreachable!();
-        }
+        } else { unreachable!(); }
         (start, end)
     }
 
@@ -235,9 +229,7 @@ impl<T: Debug> LinkedRangeSpacedList<T> {
             Bound::End { start } =>
                 if let Bound::Start { value, .. } = self.list.remove(start) {
                     value
-                } else {
-                    unreachable!()
-                }
+                } else { unreachable!() }
         }
     }
 
@@ -255,6 +247,32 @@ impl<T: Debug> LinkedRangeSpacedList<T> {
 
     pub fn deflate_before(&mut self, position: usize, spacing: usize) {
         self.list.deflate_before(position, spacing)
+    }
+}
+
+impl<T: Debug> Index<usize> for LinkedRangeSpacedList<T> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        let start_index = match &self.list[index] {
+            Bound::Start { .. } => index,
+            Bound::End { start } => *start
+        };
+        if let Bound::Start { value, .. } = &self.list[start_index] {
+            value
+        } else { unreachable!() }
+    }
+}
+
+impl<T: Debug> IndexMut<usize> for LinkedRangeSpacedList<T> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        let start_index = match &self.list[index] {
+            Bound::Start { .. } => index,
+            Bound::End { start } => *start
+        };
+        if let Bound::Start { value, .. } = &mut self.list[start_index] {
+            value
+        } else { unreachable!() }
     }
 }
 
