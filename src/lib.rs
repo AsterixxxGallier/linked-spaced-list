@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::ops::{Index, IndexMut};
 use array_linked_list::ArrayLinkedList;
 
 #[derive(Debug)]
@@ -154,6 +155,109 @@ impl<T: Debug> LinkedSpacedList<T> {
     }
 }
 
+impl<T: Debug> Index<usize> for LinkedSpacedList<T> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.list[index].as_ref().unwrap().value
+    }
+}
+
+impl<T: Debug> IndexMut<usize> for LinkedSpacedList<T> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.list[index].as_mut().unwrap().value
+    }
+}
+
+#[derive(Debug)]
+pub struct LinkedRangeSpacedList<T: Debug> {
+    list: LinkedSpacedList<Bound<T>>
+}
+
+#[derive(Debug)]
+enum Bound<T: Debug> {
+    Start { end: usize, value: T },
+    End { start: usize }
+}
+
+impl<T: Debug> LinkedRangeSpacedList<T> {
+    pub fn new() -> Self {
+        Self { list: LinkedSpacedList::new() }
+    }
+
+    pub fn push(&mut self, spacing: usize, length: usize, value: T) -> (usize, usize) {
+        let start = self.list.push(spacing, Bound::Start { end: 0, value });
+        let end = self.list.push(length, Bound::End { start });
+        if let Bound::Start { end: end_, .. } = &mut self.list[start] {
+            *end_ = end;
+        } else {
+            unreachable!();
+        }
+        (start, end)
+    }
+
+    pub fn insert_after(&mut self, start: usize, end: usize, value: T) -> (usize, usize) {
+        assert!(start <= end, "start position must be before or at end position");
+        if start >= self.list.length {
+            return self.push(start - self.list.length, end - start, value);
+        }
+        let start = self.list.insert_after(start, Bound::Start { end: 0, value });
+        let end = self.list.insert_after(end, Bound::End { start });
+        if let Bound::Start { end: end_, .. } = &mut self.list[start] {
+            *end_ = end;
+        } else {
+            unreachable!();
+        }
+        (start, end)
+    }
+
+    pub fn insert_before(&mut self, start: usize, end: usize, value: T) -> (usize, usize) {
+        assert!(start <= end, "start position must be before or at end position");
+        if start > self.list.length {
+            return self.push(start - self.list.length, end - start, value);
+        }
+        let start = self.list.insert_before(start, Bound::Start { end: 0, value });
+        let end = self.list.insert_before(end, Bound::End { start });
+        if let Bound::Start { end: end_, .. } = &mut self.list[start] {
+            *end_ = end;
+        } else {
+            unreachable!();
+        }
+        (start, end)
+    }
+
+    pub fn remove(&mut self, index: usize) -> T {
+        match self.list.remove(index) {
+            Bound::Start { end, value } => {
+                self.list.remove(end);
+                value
+            }
+            Bound::End { start } =>
+                if let Bound::Start { value, .. } = self.list.remove(start) {
+                    value
+                } else {
+                    unreachable!()
+                }
+        }
+    }
+
+    pub fn inflate_after(&mut self, position: usize, spacing: usize) {
+        self.list.inflate_after(position, spacing)
+    }
+
+    pub fn deflate_after(&mut self, position: usize, spacing: usize) {
+        self.list.deflate_after(position, spacing)
+    }
+
+    pub fn inflate_before(&mut self, position: usize, spacing: usize) {
+        self.list.inflate_before(position, spacing)
+    }
+
+    pub fn deflate_before(&mut self, position: usize, spacing: usize) {
+        self.list.deflate_before(position, spacing)
+    }
+}
+
 #[cfg(test)]
 #[allow(unused)]
 mod tests {
@@ -182,6 +286,33 @@ mod tests {
 
         for entry in list.list.iter() {
             println!("{:?}", entry);
+        }
+        println!();
+    }
+
+    #[test]
+    fn it_works_with_ranges() {
+        let mut list = LinkedRangeSpacedList::new();
+        let index_a = list.push(10, 4, 'a');
+        let index_b = list.push(2, 5, 'b');
+        let index_c = list.insert_after(9, 12, 'c');
+
+        for (index, entry) in list.list.list.indexed() {
+            println!("{} {:?}", index, entry);
+        }
+        println!();
+
+        list.inflate_after(16, 6);
+
+        for (index, entry) in list.list.list.indexed() {
+            println!("{} {:?}", index, entry);
+        }
+        println!();
+
+        list.remove(index_a.0);
+
+        for (index, entry) in list.list.list.indexed() {
+            println!("{} {:?}", index, entry);
         }
     }
 }
