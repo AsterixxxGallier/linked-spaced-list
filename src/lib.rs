@@ -155,7 +155,25 @@ impl<T: Debug> LinkedSpacedList<T> {
     }
 
     pub fn len(&self) -> usize {
-        return self.list.len()
+        self.list.len()
+    }
+
+    /// Iterator over tuples of position and value
+    pub fn iter(&self) -> impl Iterator<Item=(usize, &T)> + DoubleEndedIterator {
+        let mut position: usize = 0;
+        self.list.iter().map(move |entry| {
+            position += entry.spacing;
+            (position, &entry.value)
+        })
+    }
+
+    /// Iterator over tuples of index, position, value
+    pub fn indexed(&self) -> impl Iterator<Item=(usize, usize, &T)> + DoubleEndedIterator {
+        let mut position: usize = 0;
+        self.list.indexed().map(move |(index, entry)| {
+            position += entry.spacing;
+            (index, position, &entry.value)
+        })
     }
 }
 
@@ -179,7 +197,7 @@ pub struct LinkedRangeSpacedList<T: Debug> {
 }
 
 #[derive(Debug)]
-enum Bound<T: Debug> {
+pub enum Bound<T: Debug> {
     Start { end: usize, value: T },
     End { start: usize },
 }
@@ -254,11 +272,41 @@ impl<T: Debug> LinkedRangeSpacedList<T> {
     }
 
     pub fn len(&self) -> usize {
-        return self.list.len()
+        self.list.len()
     }
 
     pub fn len_values(&self) -> usize {
-        return self.len() / 2
+        self.len() / 2
+    }
+
+    /// Iterator over tuples of position and bound
+    pub fn iter(&self) -> impl Iterator<Item=(usize, &Bound<T>)> + DoubleEndedIterator {
+        self.list.iter()
+    }
+
+    /// Iterator over tuples of position and bound, excluding End bounds
+    pub fn iter_start_only(&self) -> impl Iterator<Item=(usize, &Bound<T>)> + DoubleEndedIterator {
+        self.list.iter().filter(|(.., bound)| matches!(bound, Bound::Start { .. }))
+    }
+
+    /// Iterator over tuples of position and bound, excluding Start bounds
+    pub fn iter_end_only(&self) -> impl Iterator<Item=(usize, &Bound<T>)> + DoubleEndedIterator {
+        self.list.iter().filter(|(.., bound)| matches!(bound, Bound::End { .. }))
+    }
+
+    /// Iterator over tuples of index, position, bound
+    pub fn indexed(&self) -> impl Iterator<Item=(usize, usize, &Bound<T>)> + DoubleEndedIterator {
+        self.list.indexed()
+    }
+
+    /// Iterator over tuples of index, position, bound, excluding End bounds
+    pub fn indexed_start_only(&self) -> impl Iterator<Item=(usize, usize, &Bound<T>)> + DoubleEndedIterator {
+        self.list.indexed().filter(|(.., bound)| matches!(bound, Bound::Start { .. }))
+    }
+
+    /// Iterator over tuples of index, position, bound, excluding Start bounds
+    pub fn indexed_end_only(&self) -> impl Iterator<Item=(usize, usize, &Bound<T>)> + DoubleEndedIterator {
+        self.list.indexed().filter(|(.., bound)| matches!(bound, Bound::End { .. }))
     }
 }
 
