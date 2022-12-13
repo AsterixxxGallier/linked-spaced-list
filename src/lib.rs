@@ -153,6 +153,10 @@ impl<T: Debug> LinkedSpacedList<T> {
         *spacing_ = spacing_.checked_sub(spacing).expect("cannot deflate below zero");
         self.length -= spacing;
     }
+
+    pub fn len(&self) -> usize {
+        return self.list.len()
+    }
 }
 
 impl<T: Debug> Index<usize> for LinkedSpacedList<T> {
@@ -247,6 +251,14 @@ impl<T: Debug> LinkedRangeSpacedList<T> {
 
     pub fn deflate_before(&mut self, position: usize, spacing: usize) {
         self.list.deflate_before(position, spacing)
+    }
+
+    pub fn len(&self) -> usize {
+        return self.list.len()
+    }
+
+    pub fn len_values(&self) -> usize {
+        return self.len() / 2
     }
 }
 
