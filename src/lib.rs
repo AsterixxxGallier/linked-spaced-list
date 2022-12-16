@@ -242,6 +242,19 @@ impl<T: Debug> LinkedRangeSpacedList<T> {
         (start, end)
     }
 
+    pub fn insert_surrounding(&mut self, start: usize, end: usize, value: T) -> (usize, usize) {
+        assert!(start <= end, "start position must be before or at end position");
+        if start > self.list.length {
+            return self.push(start - self.list.length, end - start, value);
+        }
+        let start = self.list.insert_before(start, Bound::Start { end: 0, value });
+        let end = self.list.insert_after(end, Bound::End { start });
+        if let Bound::Start { end: end_, .. } = &mut self.list[start] {
+            *end_ = end;
+        } else { unreachable!(); }
+        (start, end)
+    }
+
     pub fn remove(&mut self, index: usize) -> T {
         match self.list.remove(index) {
             Bound::Start { end, value } => {
